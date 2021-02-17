@@ -3050,8 +3050,8 @@ S_my_langinfo(pTHX_
 /* Above is the common beginning to all the implementations of my_langinfo().
  * Below are the various completions */
 #  if defined(HAS_NL_LANGINFO) /* nl_langinfo() is available.  */
-#  if   ! defined(HAS_THREAD_SAFE_NL_LANGINFO_L)      \
-     || ! defined(USE_POSIX_2008_LOCALE)
+#    if   ! defined(HAS_THREAD_SAFE_NL_LANGINFO_L)      \
+       || ! defined(USE_POSIX_2008_LOCALE)
 
     /* Here, use plain nl_langinfo(), switching to the underlying LC_NUMERIC
      * for those items dependent on it.  This must be copied to a buffer before
@@ -3088,7 +3088,7 @@ S_my_langinfo(pTHX_
     {
         locale_t cur = use_curlocale_scratch();
 
-#    ifdef USE_LOCALE_NUMERIC
+#      ifdef USE_LOCALE_NUMERIC
 
         if (toggle) {
             if (PL_underlying_numeric_obj) {
@@ -3099,7 +3099,7 @@ S_my_langinfo(pTHX_
             }
         }
 
-#    endif
+#      endif
 
         /* We have to save it to a buffer, because the freelocale() just below
          * can invalidate the internal one */
@@ -3108,11 +3108,13 @@ S_my_langinfo(pTHX_
 
     return retval;
 
-#  endif
+#    endif
 /*--------------------------------------------------------------------------*/
 #  else   /* Below, emulate nl_langinfo as best we can */
 
     {
+        const char * locale;
+
 
 #    ifdef HAS_SOME_LOCALECONV
 
@@ -3120,13 +3122,13 @@ S_my_langinfo(pTHX_
         const char * temp;
         DECLARATION_FOR_LC_NUMERIC_MANIPULATION;
 
-#    ifdef TS_W32_BROKEN_LOCALECONV
+#      ifdef TS_W32_BROKEN_LOCALECONV
 
         const char * save_global;
         const char * save_thread;
 
+#      endif
 #    endif
-#  endif
 
         /* We copy the results to a per-thread buffer, even if not
          * multi-threaded.  This is in part to simplify this code, and partly
@@ -3150,7 +3152,7 @@ S_my_langinfo(pTHX_
                 LOCALECONV_LOCK;    /* Prevent interference with other threads
                                        using localeconv() */
 
-#    ifdef TS_W32_BROKEN_LOCALECONV
+#      ifdef TS_W32_BROKEN_LOCALECONV
 
                 /* This is a workaround for a Windows bug prior to VS 15.
                  * What we do here is, while locked, switch to the global
@@ -3168,7 +3170,7 @@ S_my_langinfo(pTHX_
         save_global= savepv(querylocale_c(LC_ALL));
         void_setlocale_c(LC_ALL, save_thread);
 
-#    endif
+#      endif
 
                 lc = localeconv();
 
@@ -3494,19 +3496,13 @@ S_my_langinfo(pTHX_
 #    endif
 
       case CODESET:
+        locale = querylocale_c(LC_CTYPE);
 
-#  ifndef WIN32
+        if (isNAME_C_OR_POSIX(locale)) {
+            return C_codeset;
+        }
 
-        /* On non-windows, this is unimplemented, in part because of
-         * inconsistencies between vendors.  The Darwin native
-         * nl_langinfo() implementation simply looks at everything past
-         * any dot in the name, but that doesn't work for other
-         * vendors.  Many Linux locales that don't have UTF-8 in their
-         * names really are UTF-8, for example; z/OS locales that do
-         * have UTF-8 in their names, aren't really UTF-8 */
-        return "";
-
-#  else
+#    ifdef WIN32
 
         {
             /* This function retrieves the code page.  It is subject to change,
@@ -3520,38 +3516,71 @@ S_my_langinfo(pTHX_
             return retval;
         }
 
-#  endif
+#    endif
 
-        {   /* Temporarily unreachable */
-            const char * name = querylocale_c(LC_CTYPE);
+        /* The codeset is important, but khw did not figure out a way for it to
+         * be retrieved without nl_langinfo() (or the function above on
+         * Windows).  But even if we can't get it directly, we can usually
+         * determine if it is a UTF-8 locale or not.  If it is UTF-8, we
+         * (correctly) use that for the code set.  If not, perhaps the code set
+         * will be in the name, like "foo.8859-6" */
 
-            if (isNAME_C_OR_POSIX(name)) {
-                return C_codeset;
+#    if defined(HAS_MBTOWC) || defined(HAS_MBRTOWC)
+
+        {
+            /* These functions weren't in the published C89 standard, but were
+             * added soon after, so that many sources consider them to be C89,
+             * and are likely available in a compiler that claims to support
+             * C89. */
+
+            wchar_t wc;
+            int mbtowc_ret;
+
+            (void) Perl_mbtowc_(aTHX_ NULL, NULL, 0);    /* Reset shift state */
+            mbtowc_ret = Perl_mbtowc_(aTHX_ &wc,
+                                     STR_WITH_LEN(REPLACEMENT_CHARACTER_UTF8));
+            if (mbtowc_ret >= 0 && wc == UNICODE_REPLACEMENT) {
+                return "UTF-8";
             }
-
-            retval = (const char *) strchr(name, '.');
-            if (! retval) {
-                return "";  /* Alas, no dot */
-                }
-
-            /* Use everything past the dot */
-            retval++;
-
-            retval = save_to_buffer(retval, retbufp, retbuf_sizep);
         }
 
-        break;
+        /* Otherwise drop down to try to get the code set from the locale name.
+         * */
 
-#  endif
+#    endif
 
+        /* Here we know it isn't a UTF-8 locale (if mbtowc() was available on
+         * the platform).  All that is left us is looking at the locale name.
+         *
+         * Find any dot in the locale name */
+        retval = (const char *) strchr(locale, '.');
+        if (! retval) {
+            return "";  /* Alas, no dot */
         }
+
+        /* Use everything past the dot */
+        retval++;
+
+#    if defined(HAS_MBTOWC) || defined(HAS_MBRTOWC)
+
+        /* Here, we know that the locale did not act like a proper UTF-8 one.
+         * So if it claims to be UTF-8, it is a lie */
+        if (is_codeset_name_UTF8(retval)) {
+            return "";
+        }
+
+#    endif
+
+        return save_to_buffer(retval, retbufp, retbuf_sizep);
+    } /* Giant switch() of nl_langinfo() items */
     }
 
     return retval;
 
-#  endif
+#  endif    /* All the implementations of my_langinfo() */
 /*--------------------------------------------------------------------------*/
-}
+
+}   /* my_langinfo() */
 
 #endif      /* USE_LOCALE */
 
