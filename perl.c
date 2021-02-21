@@ -1153,6 +1153,10 @@ perl_destruct(pTHXx)
     PL_numeric_radix_sv = NULL;
 
 #endif
+#ifdef USE_LOCALE_CTYPE
+    Safefree(PL_ctype_name);
+    PL_ctype_name = NULL;
+#endif
 
     if (PL_setlocale_buf) {
         Safefree(PL_setlocale_buf);
