@@ -3242,13 +3242,15 @@ S	|const char*|my_langinfo_i|const nl_item item			\
 				|const unsigned int cat_index		\
 				|NULLOK const char * locale		\
 				|NN const char ** retbufp		\
-				|NULLOK Size_t * retbuf_sizep
-#  else
+				|NULLOK Size_t * retbuf_sizep		\
+				|NULLOK int * utf8ness
+#    else
 S	|const char*|my_langinfo_i|const int item			\
 				|const unsigned int cat_index		\
 				|NULLOK const char * locale		\
 				|NN const char ** retbufp		\
-				|NULLOK Size_t * retbuf_sizep
+				|NULLOK Size_t * retbuf_sizep		\
+				|NULLOK int * utf8ness
 #      if (defined(HAS_LOCALECONV) || defined(HAS_LOCALECONV_L))	\
        && (defined(USE_LOCALE_MONETARY) || defined(USE_LOCALE_NUMERIC))
 S	|HV *	|get_nl_item_from_localeconv				\
@@ -3256,7 +3258,7 @@ S	|HV *	|get_nl_item_from_localeconv				\
                                 |const int item				\
                                 |const int unused
 #      endif
-#  endif
+#    endif
 STR	|const char *|save_to_buffer|NULLOK const char * string	\
 				    |NULLOK const char **buf	\
 				    |NULLOK Size_t *buf_size
