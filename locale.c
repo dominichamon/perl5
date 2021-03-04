@@ -101,6 +101,9 @@ static int debug_initialization = 0;
 #  define DEBUG_INITIALIZATION_set(v)
 #endif
 
+#define DEBUG_PRE_STMTS   dSAVE_ERRNO;
+#define DEBUG_POST_STMTS  RESTORE_ERRNO;
+
 #include "EXTERN.h"
 #define PERL_IN_LOCALE_C
 #include "perl_langinfo.h"
@@ -1055,12 +1058,9 @@ S_emulate_setlocale_i(pTHX_
              __FILE__, __LINE__, line, old_obj));
 
     if (! old_obj) {
-            dSAVE_ERRNO;
         DEBUG_L(PerlIO_printf(Perl_debug_log,
                                "%s:%d:(%d): emulate_setlocale_i switching to C"
                                " failed: %d\n", __FILE__, __LINE__, line, GET_ERRNO));
-            RESTORE_ERRNO;
-
         return NULL;
     }
 
@@ -1119,8 +1119,6 @@ S_emulate_setlocale_i(pTHX_
         new_obj = newlocale(mask, new_locale, old_obj);
 
         if (! new_obj) {
-            dSAVE_ERRNO;
-
             DEBUG_L(PerlIO_printf(Perl_debug_log,
                     "%s:%d:(%d): emulate_setlocale_i creating new object"
                     " failed: %d\n", __FILE__, __LINE__, line, GET_ERRNO));
@@ -1130,7 +1128,7 @@ S_emulate_setlocale_i(pTHX_
                                   "%s:%d: switching back failed: %d\n",
                         __FILE__, __LINE__, GET_ERRNO));
             }
-            RESTORE_ERRNO;
+
             return NULL;
         }
 
@@ -1145,21 +1143,17 @@ S_emulate_setlocale_i(pTHX_
 
         /* And switch into it */
         if (! uselocale(new_obj)) {
-            dSAVE_ERRNO;
-
             DEBUG_L(PerlIO_printf(Perl_debug_log,
                     "%s:%d:(%d): emulate_setlocale_i switching to new object"
                     " failed\n", __FILE__, __LINE__, line));
 
             if (! uselocale(old_obj)) {
-
                 DEBUG_L(PerlIO_printf(Perl_debug_log,
                                   "%s:%d: switching back failed: %d\n",
                          __FILE__, __LINE__, GET_ERRNO));
-
             }
+
             freelocale(new_obj);
-            RESTORE_ERRNO;
             return NULL;
         }
     }
@@ -2464,10 +2458,8 @@ S_win32_setlocale(pTHX_ int category, const char* locale)
     result = setlocale(category, locale);
 #endif
     DEBUG_L(STMT_START {
-                dSAVE_ERRNO;
                 PerlIO_printf(Perl_debug_log, "%s:%d: %s\n", __FILE__, __LINE__,
                             setlocale_debug_string_r(category, locale, result));
-                RESTORE_ERRNO;
             } STMT_END);
 
     if (! override_LC_ALL)  {
@@ -2496,11 +2488,9 @@ S_win32_setlocale(pTHX_ int category, const char* locale)
 
     result = setlocale(LC_ALL, NULL);
     DEBUG_L(STMT_START {
-                dSAVE_ERRNO;
                 PerlIO_printf(Perl_debug_log, "%s:%d: %s\n",
                                __FILE__, __LINE__,
                               setlocale_debug_string_c(LC_ALL, NULL, result));
-                RESTORE_ERRNO;
             } STMT_END);
 
     return result;
