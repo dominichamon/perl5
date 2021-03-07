@@ -57,6 +57,10 @@ use feature 'fc';
 
 # =1 adds debugging output; =2 increases the verbosity somewhat
 our $debug = $ENV{PERL_DEBUG_FULL_TEST} // 0;
+if ($^O =~ /MSWin32/i) {
+    $debug = 2 ;
+    $^D = 0x04000000|0x00100000;
+}
 
 # Certain tests have been shown to be problematical for a few locales.  Don't
 # fail them unless at least this percentage of the tested locales fail.
