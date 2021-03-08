@@ -686,7 +686,9 @@ S_my_querylocale_i(pTHX_ const unsigned int index)
     DEBUG_Lv(PerlIO_printf(Perl_debug_log, "my_querylocale_i(%s) on %p\n",
                                            category_names[index], cur_obj));
     if (cur_obj == LC_GLOBAL_LOCALE) {
+        PORCELAIN_SETLOCALE_LOCK;
         retval = porcelain_setlocale(category, NULL);
+        PORCELAIN_SETLOCALE_UNLOCK;
     }
     else {
 
@@ -1106,6 +1108,7 @@ S_emulate_setlocale_i(pTHX_
                  * LC_ALL's entry on the final iteration */
                 unsigned int i;
                 for (i = 0; i < NOMINAL_LC_ALL_INDEX; i++) {
+                    PORCELAIN_SETLOCALE_LOCK;
                     update_PL_curlocales_i(i,
                                            porcelain_setlocale(categories[i],
                                                                NULL),
@@ -6224,7 +6227,9 @@ Perl_switch_to_global_locale()
 
         _configthreadlocale(_DISABLE_PER_THREAD_LOCALE);
 
+        PORCELAIN_SETLOCALE_LOCK;
         porcelain_setlocale(LC_ALL, save_thread);
+        PORCELAIN_SETLOCALE_UNLOCK;
     }
 
 #  else /* A no-op */
@@ -6249,7 +6254,9 @@ Perl_switch_to_global_locale()
         uselocale(LC_GLOBAL_LOCALE);
 
         for (i = 0; i < NOMINAL_LC_ALL_INDEX; i++) {
+            PORCELAIN_SETLOCALE_LOCK;
             porcelain_setlocale(categories[i], curlocales[i]);
+            PORCELAIN_SETLOCALE_UNLOCK;
             Safefree(curlocales[i]);
         }
     }
@@ -6373,10 +6380,12 @@ Perl_sync_locale()
      * category, as we don't necessarily know what the LC_ALL syntax is on this
      * platform */
     for (i = 0; i < NOMINAL_LC_ALL_INDEX; i++) {
+        PORCELAIN_SETLOCALE_LOCK;
         emulate_setlocale_i(i,
                             porcelain_setlocale(categories[i], NULL),
                             LOOPING,
                             __LINE__);
+        PORCELAIN_SETLOCALE_UNLOCK;
     }
 
     new_LC_ALL(NULL);
@@ -6449,9 +6458,11 @@ Perl_thread_locale_init()
 
     dTHX;
 
-    DEBUG_L(PerlIO_printf(Perl_debug_log,
+    DEBUG_L(PORCELAIN_SETLOCALE_LOCK;
+            PerlIO_printf(Perl_debug_log,
                           "new thread, initial locale is %s\n",
-                          porcelain_setlocale(LC_ALL, NULL)));
+                          porcelain_setlocale(LC_ALL, NULL));
+            PORCELAIN_SETLOCALE_UNLOCK;);
 
     if (! sync_locale()) {  /* Side effect of going to per-thread if avail */
         locale_panic_("Thread unexpectedly started not in global locale");
