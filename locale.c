@@ -3862,9 +3862,9 @@ S_my_langinfo_i(pTHX_
             locale = NULL;
         }
 
-        NL_LANGINFO_LOCK;
+        gwLOCALE_LOCK;
         retval = save_to_buffer(nl_langinfo(item), retbufp, retbuf_sizep);
-        NL_LANGINFO_UNLOCK;
+        gwLOCALE_UNLOCK;
 
         if (toggled) {
             RESTORE_LC_NUMERIC();
