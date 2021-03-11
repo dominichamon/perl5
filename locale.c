@@ -651,7 +651,6 @@ S_less_dicey_bool_setlocale_r(pTHX_ const int cat, const char * locale)
                                 bool_setlocale_r(categories[i], locale)
 #    define bool_setlocale_c(cat, locale) bool_setlocale_r(cat, locale)
 #  endif /* USE_LOCALE */
-
 #elif ! defined(USE_POSIX_2008_LOCALE)
 #  error Unexpected Configuration
 #else
@@ -1887,6 +1886,8 @@ S_new_ctype(pTHX_ const char *newctype)
 
     PERL_ARGS_ASSERT_NEW_CTYPE;
 
+    DEBUG_L(PerlIO_printf(Perl_debug_log, "%s: %d: Entering new_ctype(%s)\n", __FILE__, __LINE__, newctype));
+
     /* We will replace any bad locale warning with 1) nothing if the new one is
      * ok; or 2) a new warning for the bad new locale */
     if (PL_warn_locale) {
@@ -1895,9 +1896,14 @@ S_new_ctype(pTHX_ const char *newctype)
     }
 
     save_newctype = savepv(newctype);
+    if (PL_in_utf8_CTYPE_locale && isNAME_C_OR_POSIX(save_newctype)) {
+        /*XXX assert(0);*/
+    }
 
     PL_in_utf8_CTYPE_locale = is_locale_utf8(save_newctype);
     PL_in_utf8_turkic_locale = FALSE;
+    DEBUG_L(PerlIO_printf(Perl_debug_log, "%s: %d: is utf8=%d\n", __FILE__, __LINE__, PL_in_utf8_CTYPE_locale));
+
 
     /* Save the new name if it isn't the same as the previous one */
     if (PL_ctype_name && strEQ(PL_ctype_name, save_newctype)) {
@@ -1906,6 +1912,9 @@ S_new_ctype(pTHX_ const char *newctype)
     else {
         Safefree(PL_ctype_name);
         PL_ctype_name = save_newctype;
+        DEBUG_L( PerlIO_printf(Perl_debug_log,
+                               "stashed PL_ctype_name=%s\n",
+                               PL_ctype_name));
     }
 
     if (isNAME_C_OR_POSIX(PL_ctype_name)) {
@@ -1946,6 +1955,9 @@ S_new_ctype(pTHX_ const char *newctype)
                 PL_fold_locale[i] = (U8) toU8_UPPER_LC(i);
             else
                 PL_fold_locale[i] = (U8) i;
+            DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+                     "For %s, fold of %02x is %02x\n",
+                     newctype, i, PL_fold_locale[i]));
         }
     }
 
@@ -2276,6 +2288,7 @@ S_new_collate(pTHX_ const char *newcoll)
         ++PL_collation_ix;
         Safefree(PL_collation_name);
         PL_collation_name = savepv(newcoll);
+        DEBUG_Lv(PerlIO_printf(Perl_debug_log, "Setting PL_collation name='%s'\n", PL_collation_name));
         PL_collation_standard = isNAME_C_OR_POSIX(newcoll);
         if (PL_collation_standard) {
             goto is_standard_collation;
