@@ -507,142 +507,142 @@ S_my_querylocale_i(pTHX_ const unsigned int index)
 
     DEBUG_Lv(PerlIO_printf(Perl_debug_log, "%s:%d: my_querylocale_i %p\n",
                  __FILE__, __LINE__, cur_obj));
-        if (cur_obj == LC_GLOBAL_LOCALE) {
-            return porcelain_setlocale(category, NULL);
-        }
+    if (cur_obj == LC_GLOBAL_LOCALE) {
+        return porcelain_setlocale(category, NULL);
+    }
 
 #  ifdef HAS_QUERYLOCALE
 
-        return (char *) querylocale(category_masks[index], cur_obj);
+    return (char *) querylocale(category_masks[index], cur_obj);
 
 #  else
 
-        /* If this assert fails, adjust the size of curlocales in intrpvar.h */
-        STATIC_ASSERT_STMT(C_ARRAY_LENGTH(PL_curlocales) > LC_ALL_INDEX_);
+    /* If this assert fails, adjust the size of curlocales in intrpvar.h */
+    STATIC_ASSERT_STMT(C_ARRAY_LENGTH(PL_curlocales) > LC_ALL_INDEX_);
 
 #    if   defined(_NL_LOCALE_NAME)                                          \
-     &&   defined(DEBUGGING)                                                \
-          /* On systems that accept any locale name, the real underlying    \
-           * locale is often returned by this internal function, so we      \
-           * can't use it */                                                \
-     && ! defined(SETLOCALE_ACCEPTS_ANY_LOCALE_NAME)
-        {
-            /* Internal glibc for querylocale(), but doesn't handle
-             * empty-string ("") locale properly; who knows what other
-             * glitches.  Check for it now, under debug. */
+ &&   defined(DEBUGGING)                                                    \
+      /* On systems that accept any locale name, the real underlying        \
+       * locale is often returned by this internal function, so we          \
+       * can't use it */                                                    \
+ && ! defined(SETLOCALE_ACCEPTS_ANY_LOCALE_NAME)
+    {
+        /* Internal glibc for querylocale(), but doesn't handle empty-string
+         * ("") locale properly; who knows what other glitches.  Check for it
+         * now, under debug. */
 
-            char * temp_name = nl_langinfo_l(_NL_LOCALE_NAME(category),
-                                             uselocale((locale_t) 0));
-            /*
-        PerlIO_printf(Perl_debug_log, "%s:%d: temp_name=%s\n",
-                      __FILE__, __LINE__, temp_name ? temp_name : "NULL");
-        PerlIO_printf(Perl_debug_log, "%s:%d: index=%d\n",
-                      __FILE__, __LINE__, index);
-        PerlIO_printf(Perl_debug_log, "%s:%d: PL_curlocales[index]=%s\n",
-                        __FILE__, __LINE__, PL_curlocales[index]);
-            */
-            if (temp_name && PL_curlocales[index] && strNE(temp_name, "")) {
-                if (         strNE(PL_curlocales[index], temp_name)
-                    && ! (   isNAME_C_OR_POSIX(temp_name)
-                          && isNAME_C_OR_POSIX(PL_curlocales[index]))) {
+        char * temp_name = nl_langinfo_l(_NL_LOCALE_NAME(category),
+                                         uselocale((locale_t) 0));
+        /*
+    PerlIO_printf(Perl_debug_log, "%s:%d: temp_name=%s\n",
+                  __FILE__, __LINE__, temp_name ? temp_name : "NULL");
+    PerlIO_printf(Perl_debug_log, "%s:%d: index=%d\n",
+                  __FILE__, __LINE__, index);
+    PerlIO_printf(Perl_debug_log, "%s:%d: PL_curlocales[index]=%s\n",
+                    __FILE__, __LINE__, PL_curlocales[index]);
+        */
+        if (temp_name && PL_curlocales[index] && strNE(temp_name, "")) {
+            if (         strNE(PL_curlocales[index], temp_name)
+                && ! (   isNAME_C_OR_POSIX(temp_name)
+                      && isNAME_C_OR_POSIX(PL_curlocales[index]))) {
 
 #      ifdef USE_C_BACKTRACE
 
-                    dump_c_backtrace(Perl_debug_log, 20, 1);
+                dump_c_backtrace(Perl_debug_log, 20, 1);
 
 #      endif
 
-                    Perl_croak(aTHX_ "panic: Mismatch between what Perl thinks %s is"
-                                     " (%s) and what internal glibc thinks"
-                                     " (%s)\n", category_names[index],
-                                     PL_curlocales[index], temp_name);
-                }
-
-                return temp_name;
+                Perl_croak(aTHX_ "panic: Mismatch between what Perl thinks %s is"
+                                 " (%s) and what internal glibc thinks"
+                                 " (%s)\n", category_names[index],
+                                 PL_curlocales[index], temp_name);
             }
+
+            return temp_name;
         }
+    }
 
 #    endif
 
     /* Without querylocale(), we have to use our record-keeping we've done. */
-        if (category != LC_ALL) {
+    if (category != LC_ALL) {
+
+        DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+                 "%s:%d: my_querylocale_i returning %s\n",
+                 __FILE__, __LINE__, PL_curlocales[index]));
+
+        return PL_curlocales[index];
+    }
+    else {  /* For LC_ALL */
+        unsigned int i;
+        Size_t names_len = 0;
+        char * all_string;
+        bool are_all_categories_the_same_locale = TRUE;
+
+        /* If we have a valid LC_ALL value, just return it */
+        if (PL_curlocales[LC_ALL_INDEX_]) {
 
             DEBUG_Lv(PerlIO_printf(Perl_debug_log,
                      "%s:%d: my_querylocale_i returning %s\n",
-                     __FILE__, __LINE__, PL_curlocales[index]));
+                     __FILE__, __LINE__, PL_curlocales[LC_ALL_INDEX_]));
 
-            return PL_curlocales[index];
+            return PL_curlocales[LC_ALL_INDEX_];
         }
-        else {  /* For LC_ALL */
-            unsigned int i;
-            Size_t names_len = 0;
-            char * all_string;
-            bool are_all_categories_the_same_locale = TRUE;
 
-            /* If we have a valid LC_ALL value, just return it */
-            if (PL_curlocales[LC_ALL_INDEX_]) {
+        /* Otherwise, we need to construct a string of name=value pairs.
+         * We use the glibc syntax, like
+         *      LC_NUMERIC=C;LC_TIME=en_US.UTF-8;...
+         *  First calculate the needed size.  Along the way, check if all
+         *  the locale names are the same */
+        for (i = 0; i < LC_ALL_INDEX_; i++) {
 
-                DEBUG_Lv(PerlIO_printf(Perl_debug_log,
-                         "%s:%d: my_querylocale_i returning %s\n",
-                         __FILE__, __LINE__, PL_curlocales[LC_ALL_INDEX_]));
+            DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+                 "%s:%d: my_querylocale_i i=%d, name=%s, locale=%s\n",
+                     __FILE__, __LINE__, i, category_names[i],
+                     PL_curlocales[i]));
 
-                return PL_curlocales[LC_ALL_INDEX_];
+            names_len += strlen(category_names[i])
+                      + 1                       /* '=' */
+                      + strlen(PL_curlocales[i])
+                      + 1;                      /* ';' */
+
+            if (i > 0 && strNE(PL_curlocales[i], PL_curlocales[i-1])) {
+                are_all_categories_the_same_locale = FALSE;
             }
+        }
 
-            /* Otherwise, we need to construct a string of name=value pairs.
-             * We use the glibc syntax, like
-             *      LC_NUMERIC=C;LC_TIME=en_US.UTF-8;...
-             *  First calculate the needed size.  Along the way, check if all
-             *  the locale names are the same */
-            for (i = 0; i < LC_ALL_INDEX_; i++) {
-
-                DEBUG_Lv(PerlIO_printf(Perl_debug_log,
-                     "%s:%d: my_querylocale_i i=%d, name=%s, locale=%s\n",
-                         __FILE__, __LINE__, i, category_names[i],
-                         PL_curlocales[i]));
-
-                names_len += strlen(category_names[i])
-                          + 1                       /* '=' */
-                          + strlen(PL_curlocales[i])
-                          + 1;                      /* ';' */
-
-                if (i > 0 && strNE(PL_curlocales[i], PL_curlocales[i-1])) {
-                    are_all_categories_the_same_locale = FALSE;
-                }
-            }
-
-            /* If they are the same, we don't actually have to construct the
+        /* If they are the same, we don't actually have to construct the
          * string; we just make the entry in LC_ALL_INDEX_ valid, and be that
          * single name */
-            if (are_all_categories_the_same_locale) {
-                PL_curlocales[LC_ALL_INDEX_] = savepv(PL_curlocales[0]);
-                return PL_curlocales[LC_ALL_INDEX_];
-            }
-
-            names_len++;    /* Trailing '\0' */
-            SAVEFREEPV(Newx(all_string, names_len, char));
-            *all_string = '\0';
-
-            /* Then fill in the string */
-            for (i = 0; i < LC_ALL_INDEX_; i++) {
-
-                DEBUG_Lv(PerlIO_printf(Perl_debug_log,
-                     "%s:%d: my_querylocale_i i=%d, name=%s, locale=%s\n",
-                         __FILE__, __LINE__, i, category_names[i],
-                         PL_curlocales[i]));
-
-                my_strlcat(all_string, category_names[i], names_len);
-                my_strlcat(all_string, "=", names_len);
-                my_strlcat(all_string, PL_curlocales[i], names_len);
-                my_strlcat(all_string, ";", names_len);
-            }
-
-            DEBUG_L(PerlIO_printf(Perl_debug_log,
-                "%s:%d: my_querylocale_i returning %s\n",
-                    __FILE__, __LINE__, all_string));
-
-            return all_string;
+        if (are_all_categories_the_same_locale) {
+            PL_curlocales[LC_ALL_INDEX_] = savepv(PL_curlocales[0]);
+            return PL_curlocales[LC_ALL_INDEX_];
         }
+
+        names_len++;    /* Trailing '\0' */
+        SAVEFREEPV(Newx(all_string, names_len, char));
+        *all_string = '\0';
+
+        /* Then fill in the string */
+        for (i = 0; i < LC_ALL_INDEX_; i++) {
+
+            DEBUG_Lv(PerlIO_printf(Perl_debug_log,
+                 "%s:%d: my_querylocale_i i=%d, name=%s, locale=%s\n",
+                     __FILE__, __LINE__, i, category_names[i],
+                     PL_curlocales[i]));
+
+            my_strlcat(all_string, category_names[i], names_len);
+            my_strlcat(all_string, "=", names_len);
+            my_strlcat(all_string, PL_curlocales[i], names_len);
+            my_strlcat(all_string, ";", names_len);
+        }
+
+        DEBUG_L(PerlIO_printf(Perl_debug_log,
+            "%s:%d: my_querylocale_i returning %s\n",
+                __FILE__, __LINE__, all_string));
+
+        return all_string;
+    }
 
 #  endif
 
