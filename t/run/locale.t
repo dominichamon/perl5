@@ -24,7 +24,7 @@ use Config;
 my $have_strtod = $Config{d_strtod} eq 'define';
 my @locales = find_locales( [ 'LC_ALL', 'LC_CTYPE', 'LC_NUMERIC' ]);
 skip_all("no locales available") unless @locales;
-note("locales available: @locales");
+diag("locales available: @locales");
 
 my $debug = 0;
 my $switches = "";
@@ -128,11 +128,13 @@ EOF
 
     # try to find out a locale where LC_NUMERIC makes a difference
     my $original_locale = setlocale(LC_NUMERIC);
+    print STDERR __FILE__, ": ", __LINE__, ": $original_locale\n";
 
     my ($base, $different, $comma, $difference, $utf8_radix);
     my $radix_encoded_as_utf8;
     for ("C", @locales) { # prefer C for the base if available
         use locale;
+        print STDERR __FILE__, ": ", __LINE__, ": $_\n";
         setlocale(LC_NUMERIC, $_) or next;
         my $in = 4.2; # avoid any constant folding bugs
         if ((my $s = sprintf("%g", $in)) eq "4.2")  {
