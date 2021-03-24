@@ -132,9 +132,10 @@ EOF
 
     my ($base, $different, $comma, $difference, $utf8_radix);
     my $radix_encoded_as_utf8;
+    $^D = 0x04000000|0x00100000 if $^O =~ /MSWin32/i;
     for ("C", @locales) { # prefer C for the base if available
         use locale;
-        print STDERR __FILE__, ": ", __LINE__, ": $_\n";
+        print STDERR __FILE__, ": ", __LINE__, ": $_\n"  if $^O =~ /MSWin32/i;
         setlocale(LC_NUMERIC, $_) or next;
         my $in = 4.2; # avoid any constant folding bugs
         if ((my $s = sprintf("%g", $in)) eq "4.2")  {
@@ -161,6 +162,7 @@ EOF
         last if $base && $different && $comma && $utf8_radix;
     }
     setlocale(LC_NUMERIC, $original_locale);
+    $^D = 0 if $^O =~ /MSWin32/i;
 
     SKIP: {
         skip("no UTF-8 locale available where LC_NUMERIC radix isn't ASCII", 1 )
