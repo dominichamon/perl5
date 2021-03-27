@@ -1147,6 +1147,7 @@ perl_destruct(pTHXx)
     PL_numeric_name = NULL;
     SvREFCNT_dec(PL_numeric_radix_sv);
     PL_numeric_radix_sv = NULL;
+
 #endif
 
     if (PL_setlocale_buf) {
@@ -1157,6 +1158,11 @@ perl_destruct(pTHXx)
     if (PL_langinfo_buf) {
         Safefree(PL_langinfo_buf);
         PL_langinfo_buf = NULL;
+    }
+
+    if (PL_stdize_locale_buf) {
+        Safefree(PL_stdize_locale_buf);
+        PL_stdize_locale_buf = NULL;
     }
 
 #ifdef USE_LOCALE_CTYPE
