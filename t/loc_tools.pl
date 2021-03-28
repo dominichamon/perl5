@@ -149,6 +149,8 @@ sub _trylocale ($$$$) { # For use only by other functions in this file!
     my $has_ctype = 0;
     my $has_all = 0;
     my $has_collate = 0;
+    use Data::Dumper;
+    #print STDERR __FILE__, ": ", __LINE__, ": ", Dumper \%category_number, \%category_name, $categories;
     foreach my $category (@$categories) {
         die "category '$category' must instead be a number"
                                             unless $category =~ / ^ -? \d+ $ /x;
@@ -373,8 +375,13 @@ sub find_locales ($;$) {
     my $input_categories = shift;
     my $allow_incompatible = shift // 0;
 
-    my @categories = (ref $input_categories) ? $input_categories->@* : $input_categories;
+    my @categories = (ref $input_categories)
+                      ? $input_categories->@*
+                      : $input_categories;
+    use Data::Dumper;
+    #print STDERR __FILE__, ": ", __LINE__, ": ", "finding\n", Dumper \@categories;
     return unless locales_enabled(\@categories);
+    #print STDERR __FILE__, ": ", __LINE__, ": ", "enabled, (allow incompat=$allow_incompatible)\n";
 
     # Note, the subroutine call above converts the $categories into a form
     # suitable for _trylocale().
@@ -404,6 +411,7 @@ sub find_locales ($;$) {
     return sort @Locale if defined $Config{d_setlocale_accepts_any_locale_name};
 
     foreach (1..16) {
+        #print STDERR __FILE__, ": ", __LINE__, ": ", "foreach\n";
         _trylocale("ISO8859-$_", \@categories, \@Locale, $allow_incompatible);
         _trylocale("iso8859$_", \@categories, \@Locale, $allow_incompatible);
         _trylocale("iso8859-$_", \@categories, \@Locale, $allow_incompatible);
@@ -431,9 +439,11 @@ sub find_locales ($;$) {
             # locales will cause all IO hadles to default to (assume) utf8
             next unless utf8::valid($_);
             chomp;
+            #print STDERR __FILE__, ": ", __LINE__, ": ", "trying $_\n";
             _trylocale($_, \@categories, \@Locale, $allow_incompatible);
         }
         close(LOCALES);
+            #print STDERR __FILE__, ": ", __LINE__, ": ", "done \n";
     } elsif ($^O eq 'VMS'
              && defined($ENV{'SYS$I18N_LOCALE'})
              && -d 'SYS$I18N_LOCALE')
