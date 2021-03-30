@@ -1,5 +1,5 @@
 /*    locale.c
- *
+ * XXX other workspace has stashes, including the NL_LOCALE for setlocale("" no querylocale)
  *    Copyright (C) 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000, 2001,
  *    2002, 2003, 2005, 2006, 2007, 2008 by Larry Wall and others
  *
@@ -27,7 +27,7 @@
  * any attention to it except within the scope of a 'use locale'.  For most
  * categories, it accomplishes this by just using different operations if it is
  * in such scope than if not.  However, various libc functions called by Perl
- * are affected by the LC_NUMERIC category, so there are macros in perl.h that
+ * are affected by the XXX LC_NUMERIC category, so there are macros in perl.h that
  * are used to toggle between the current locale and the C locale depending on
  * the desired behavior of those functions at the moment.  And, LC_MESSAGES is
  * switched to the C locale for outputting the message unless within the scope
@@ -1100,7 +1100,10 @@ S_emulate_setlocale_i(pTHX_
 {
     /* This function effectively performs a setlocale() on just the current
      * thread; thus it is thread-safe.  It does this by using the POSIX 2008
-     * locale functions to emulate the behavior of setlocale().  Similar to
+     * locale functions to emulate the behavior of setlocale().
+     *
+     * XXX
+     * Similar to
      * regular setlocale(), the return from this function points to memory that
      * can be overwritten by other system calls, so needs to be copied
      * immediately if you need to retain it.  The difference here is that
@@ -1743,6 +1746,9 @@ S_new_numeric(pTHX_ const char *newnum)
     else {
         Safefree(PL_numeric_name);
         PL_numeric_name = save_newnum;
+        DEBUG_L( PerlIO_printf(Perl_debug_log,
+                               "stashed PL_numeric_name=%s\n",
+                               PL_numeric_name));
     }
 
 #    ifdef USE_POSIX_2008_LOCALE
@@ -1825,6 +1831,7 @@ Perl_set_numeric_standard(pTHX)
 
     DEBUG_L(PerlIO_printf(Perl_debug_log,
                                   "Setting LC_NUMERIC locale to standard C\n"));
+    /* Maybe not in init? assert(PL_locale_mutex_depth > 0);*/
 
     void_setlocale_c(LC_NUMERIC, "C");
     PL_numeric_standard = TRUE;
@@ -1849,6 +1856,7 @@ Perl_set_numeric_underlying(pTHX)
 
     DEBUG_L(PerlIO_printf(Perl_debug_log, "Setting LC_NUMERIC locale to %s\n",
                                           PL_numeric_name));
+    /* Maybe not in init? assert(PL_locale_mutex_depth > 0);*/
 
     void_setlocale_c(LC_NUMERIC, PL_numeric_name);
     PL_numeric_standard = PL_numeric_underlying_is_standard;
@@ -2679,6 +2687,7 @@ configurations.
 C<Perl_setlocale> should not be used to change the locale except on systems
 where the predefined variable C<${^SAFE_LOCALES}> is 1.  On some such systems,
 the system C<setlocale()> is ineffective, returning the wrong information, and
+XXX
 failing to actually change the locale.  C<Perl_setlocale>, however works
 properly in all circumstances.
 
@@ -4617,6 +4626,7 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
 #else  /* USE_LOCALE */
 #  ifdef __GLIBC__
 
+    /* This has priority over everything else XXX in "" on Debian, so querylocale really should be used on such boxes */
     const char * const language = PerlEnv_getenv("LANGUAGE");
 
 #  endif
