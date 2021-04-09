@@ -4566,11 +4566,11 @@ Perl_sv_setsv_flags(pTHX_ SV *dsv, SV* ssv, const I32 flags)
 	 * be allocated it is still not worth swiping PADTMPs for short
 	 * strings, as the savings here are small.
 	 *
-	 * If swiping is not an option, then we see whether it is
-	 * worth using copy-on-write.  If the lhs already has a buf-
-	 * fer big enough and the string is short, we skip it and fall back
-	 * to method 3, since memcpy is faster for short strings than the
-	 * later bookkeeping overhead that copy-on-write entails.
+         * If swiping is not an option, then we see whether it is worth using
+         * copy-on-write.  If the lhs already has a buffer big enough and the
+         * string is short, we skip it and fall back to method 3, since memcpy
+         * is faster for short strings than the later bookkeeping overhead that
+         * copy-on-write entails.
 
 	 * If the rhs is not a copy-on-write string yet, then we also
 	 * consider whether the buffer is too large relative to the string
