@@ -4636,13 +4636,13 @@ STATIC void	S_print_bytes_for_locale(pTHX_ const char * const s, const char * co
 #define PERL_ARGS_ASSERT_PRINT_BYTES_FOR_LOCALE	\
 	assert(s); assert(e)
 #    if defined(USE_LOCALE)
+STATIC char *	S_my_setlocale_debug_string_i(pTHX_ const unsigned cat_index, const char* locale, const char* retval, const line_t line)
+			__attribute__warn_unused_result__;
+#define PERL_ARGS_ASSERT_MY_SETLOCALE_DEBUG_STRING_I
+
 STATIC void	S_print_collxfrm_input_and_return(pTHX_ const char * s, const char * e, const char * xbuf, const STRLEN xlen, const bool is_utf8);
 #define PERL_ARGS_ASSERT_PRINT_COLLXFRM_INPUT_AND_RETURN	\
 	assert(s); assert(e)
-STATIC char *	S_setlocale_debug_string_i(const unsigned cat_index, const char* const locale, const char* const retval)
-			__attribute__warn_unused_result__;
-#define PERL_ARGS_ASSERT_SETLOCALE_DEBUG_STRING_I
-
 #    endif
 #  endif
 #  if defined(PERL_IN_PAD_C)
@@ -5209,8 +5209,6 @@ STATIC void	S_restore_toggled_locale_i(pTHX_ const unsigned cat_index, const cha
 #define PERL_ARGS_ASSERT_RESTORE_TOGGLED_LOCALE_I
 STATIC const char *	S_save_to_buffer(const char * string, const char **buf, Size_t *buf_size);
 #define PERL_ARGS_ASSERT_SAVE_TO_BUFFER
-STATIC void	S_set_numeric_radix(pTHX_ const bool use_locale);
-#define PERL_ARGS_ASSERT_SET_NUMERIC_RADIX
 PERL_STATIC_NO_RET void	S_setlocale_failure_panic_i(pTHX_ const unsigned int cat_index, const char * current, const char * failed, const line_t caller_0_line, const line_t caller_1_line)
 			__attribute__noreturn__;
 #define PERL_ARGS_ASSERT_SETLOCALE_FAILURE_PANIC_I	\
@@ -5242,6 +5240,10 @@ STATIC const char *	S_calculate_LC_ALL(pTHX_ const locale_t cur_obj);
 #define PERL_ARGS_ASSERT_CALCULATE_LC_ALL
 #    endif
 #    if defined(WIN32)
+PERL_CALLCONV wchar_t *	Perl_Win_utf8_string_to_wstring(const char * utf8_string);
+#define PERL_ARGS_ASSERT_WIN_UTF8_STRING_TO_WSTRING
+PERL_CALLCONV char *	Perl_Win_wstring_to_utf8_string(const wchar_t * wstring);
+#define PERL_ARGS_ASSERT_WIN_WSTRING_TO_UTF8_STRING
 STATIC char*	S_win32_setlocale(pTHX_ int category, const char* locale);
 #define PERL_ARGS_ASSERT_WIN32_SETLOCALE
 #    endif

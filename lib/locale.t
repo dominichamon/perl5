@@ -54,12 +54,13 @@ BEGIN {
 }
 
 use feature 'fc';
+use I18N::Langinfo qw(langinfo CODESET CRNCYSTR RADIXCHAR);
 
 # =1 adds debugging output; =2 increases the verbosity somewhat
 our $debug = $ENV{PERL_DEBUG_FULL_TEST} // 0;
-if ($^O =~ /MSWin32/i) {
-    $debug = 2 ;
-    $^D = 0x04000000|0x00100000;
+if ($^O =~ /cygwin | darwin /xi) {
+    $debug = 1 ;
+    $^D = 0x04000000|0x00100000;# if $^O eq 'cygwin';
 }
 
 # Certain tests have been shown to be problematical for a few locales.  Don't
@@ -107,7 +108,7 @@ my $dumper = Dumpvalue->new(
 
 sub debug {
   return unless $debug;
-  my($mess) = join "", '# ', __FILE__, @_;
+  my($mess) = join "", '# ', __FILE__, ": ", @_;
   chomp $mess;
   print STDERR $dumper->stringify($mess,1), "\n";
 }
@@ -138,14 +139,17 @@ sub ok {
     print "ok " . ++$test_num;
     print " $message";
     print "\n";
+    debug __FILE__ . ": ", __LINE__ . ": ok=$result $test_num $message" if $debug;
     return ($result) ? 1 : 0;
 }
 
 sub skip {
+    debug __FILE__ . ": ", __LINE__ . ": skip $_[0]" if $debug;
     return ok 1, "skipped: " . shift;
 }
 
 sub fail {
+    debug __FILE__ . ": ", __LINE__ . ": fail $_[0]" if $debug;
     return ok 0, shift;
 }
 
@@ -1053,9 +1057,11 @@ foreach my $Locale (@Locale) {
 
     my $is_utf8_locale = is_locale_utf8($Locale);
 
+    debug "code set = " . langinfo(CODESET);
     debug "is utf8 locale? = $is_utf8_locale\n";
 
-    debug "radix = " . disp_str(localeconv()->{decimal_point}) . "\n";
+    debug "radix = " . disp_str(langinfo(RADIXCHAR));
+    debug "currency = " . disp_str(langinfo(CRNCYSTR));
 
     if (! $is_utf8_locale) {
         use locale;
@@ -2430,7 +2436,7 @@ foreach my $Locale (@Locale) {
         $test_names{$locales_test_number} = 'Verify atof with locale radix and negative exponent';
         $problematical_tests{$locales_test_number} = 1;
 
-        my $radix = POSIX::localeconv()->{decimal_point};
+        my $radix = langinfo(RADIXCHAR);
         my @nums = (
              "3.14e+9",  "3${radix}14e+9",  "3.14e-9",  "3${radix}14e-9",
             "-3.14e+9", "-3${radix}14e+9", "-3.14e-9", "-3${radix}14e-9",

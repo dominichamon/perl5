@@ -15666,12 +15666,12 @@ perl_clone_using(PerlInterpreter *proto_perl, UV flags,
 #ifdef USE_LOCALE_COLLATE
     PL_collation_name	= SAVEPV(proto_perl->Icollation_name);
     PL_in_utf8_COLLATE_locale = proto_perl->Iin_utf8_COLLATE_locale;
-#endif /* USE_LOCALE_COLLATE */
-
+#endif
 #ifdef USE_LOCALE_NUMERIC
     PL_numeric_name	= SAVEPV(proto_perl->Inumeric_name);
     PL_ctype_name	= SAVEPV(proto_perl->Ictype_name);
     PL_numeric_radix_sv	= sv_dup_inc(proto_perl->Inumeric_radix_sv, param);
+    PL_underlying_radix_sv = sv_dup_inc(proto_perl->Iunderlying_radix_sv, param);
 
 #  if defined(USE_POSIX_2008_LOCALE)
     PL_underlying_numeric_obj = NULL;

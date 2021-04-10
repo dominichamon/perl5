@@ -1101,6 +1101,7 @@ Example usage:
 
 /* Allow use of glib's undocumented querylocale() equivalent if asked for, and
  * appropriate */
+#define USE_NL_LOCALE_NAME
 #  ifdef USE_POSIX_2008_LOCALE
 #    if  defined(HAS_QUERYLOCALE)                                           \
               /* Has this internal undocumented item for nl_langinfo() */   \
@@ -7100,15 +7101,17 @@ cannot have changed since the precalculation.
             LC_NUMERIC_UNLOCK;                                              \
         } STMT_END
 
-/* The next two macros set unconditionally.  These should be rarely used, and
- * only after being sure that this is what is needed */
+/* The next two macros should be rarely used, and only after being sure that
+ * this is what is needed */
 #  define SET_NUMERIC_STANDARD()                                            \
 	STMT_START {                                                        \
-            /*assert(PL_locale_mutex_depth > 0);*/                              \
+          /*assert(PL_locale_mutex_depth > 0);*/                            \
             DEBUG_Lv(PerlIO_printf(Perl_debug_log,                          \
                                "%s: %d: lc_numeric standard=%d\n",          \
                                 __FILE__, __LINE__, PL_numeric_standard));  \
-            Perl_set_numeric_standard(aTHX);                                \
+            if (NOT_IN_NUMERIC_STANDARD_) {                                 \
+                Perl_set_numeric_standard(aTHX);                            \
+            }                                                               \
             DEBUG_Lv(PerlIO_printf(Perl_debug_log,                          \
                                  "%s: %d: lc_numeric standard=%d\n",        \
                                  __FILE__, __LINE__, PL_numeric_standard)); \
@@ -7116,7 +7119,7 @@ cannot have changed since the precalculation.
 
 #  define SET_NUMERIC_UNDERLYING()                                          \
 	STMT_START {                                                        \
-            /*assert(PL_locale_mutex_depth > 0);*/                              \
+          /*assert(PL_locale_mutex_depth > 0);*/                            \
             if (NOT_IN_NUMERIC_UNDERLYING_) {                               \
                 Perl_set_numeric_underlying(aTHX);                          \
             }                                                               \

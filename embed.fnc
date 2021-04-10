@@ -3288,7 +3288,6 @@ Sr	|void	|setlocale_failure_panic_i|const unsigned int cat_index	\
 				|NN const char * failed			\
 				|const line_t caller_0_line		\
 				|const line_t caller_1_line
-S	|void	|set_numeric_radix|const bool use_locale
 S	|void	|new_numeric	|NN const char* newnum
 S	|void	|new_LC_ALL	|NULLOK const char* unused
 S	|const char *|toggle_locale_i|const unsigned switch_cat_index	\
@@ -3329,6 +3328,8 @@ S	|void	|less_dicey_void_setlocale_i				\
 #    endif
 #    ifdef WIN32
 S	|char*	|win32_setlocale|int category|NULLOK const char* locale
+pTC	|wchar_t *|Win_utf8_string_to_wstring|NULLOK const char * utf8_string
+pTC	|char *	|Win_wstring_to_utf8_string|NULLOK const wchar_t * wstring
 #    endif
 #    ifdef DEBUGGING
 S	|void	|print_collxfrm_input_and_return		\
@@ -3337,9 +3338,11 @@ S	|void	|print_collxfrm_input_and_return		\
 			    |NULLOK const char * xbuf		\
 			    |const STRLEN xlen			\
 			    |const bool is_utf8
-STR	|char *	|setlocale_debug_string_i|const unsigned cat_index	    \
-					|NULLOK const char* const locale    \
-					|NULLOK const char* const retval
+SR	|char *	|my_setlocale_debug_string_i			\
+			    |const unsigned cat_index		\
+			    |NULLOK const char* locale		\
+			    |NULLOK const char* retval		\
+			    |const line_t line
 #    endif
 #  endif
 #  ifdef DEBUGGING

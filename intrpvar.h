@@ -805,13 +805,12 @@ PERLVAR(I, srand_called, bool)
 PERLVARI(I, numeric_underlying, bool, TRUE)
                                         /* Assume underlying locale numerics */
 PERLVARI(I, numeric_underlying_is_standard, bool, TRUE)
-
-PERLVARI(I, numeric_standard, int, TRUE)
-                                        /* Assume C locale numerics */
+PERLVARI(I, numeric_standard, int, TRUE) /* Assume C locale numerics */
 /* Name of current numeric locale */
 PERLVARI(I, numeric_name, const char *, NULL)
 
-PERLVAR(I, numeric_radix_sv, SV *)	/* The radix separator if not '.' */
+PERLVAR(I, numeric_radix_sv, SV *)	/* The radix XXX separator if not '.' */
+PERLVAR(I, underlying_radix_sv, SV *)	/* The radix in the program's current underlying locale */
 
 #ifdef USE_LOCALE_CTYPE
 

@@ -1398,6 +1398,17 @@ Perl that the call should be in list context.
 (P) For some reason you can't fstat() the script even though you have it
 open already.  Bizarre.
 
+=item Can't switch to locale '%s': %s
+
+(S locale)  Your attempt to change to the named locale failed due to an
+operating system error that is beyond the control of you or Perl.  The
+reason is as stated in the message.  Perhaps the bug has been fixed in a
+later version of the operating system.
+
+Currently this only happens when you switch to a locale, but the
+OS's internal name for the locale (that it translates your external one
+to) is illegal according to the OS's own rules.
+
 =item Can't take log of %g
 
 (F) For ordinary real numbers, you can't take the logarithm of a
@@ -3446,6 +3457,17 @@ non-zero for them.  But a few locales have it return 0.   Perl takes
 the first approach, not using C<ispunct()> at all (see L<Note [5] in
 perlrecharclass|perlrecharclass/[5]>), and this message is raised to notify you that you
 are getting Perl's approach, not the locale's.
+
+=item Locale '%s' is unsupported, and may crash the interpreter.
+
+(S locale) The named locale is not supported by Perl, and using it leads
+to undefined behavior, including potentially crashing the computer.
+
+Currently the only locales that generate this severe warning are those
+which have characters that require more than one byte to represent
+(common in older East Asian language locales).  The only locales with
+this characteristic that Perl can handle are UTF-8 locales.  See
+L<perllocale>.
 
 =item Locale '%s' may not work well.%s
 
