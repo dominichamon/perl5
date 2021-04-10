@@ -4650,10 +4650,22 @@ Perl_init_i18nl10n(pTHX_ int printwarn)
 
     DEBUG_Lv(PerlIO_printf(Perl_debug_log, "created C object %p\n",
                            PL_C_locale_obj));
+
+#  endif
+#  ifdef USE_LOCALE_COLLATE
+
+    Newxz(PL_collation_name, 1, char);
+
+#  endif
+#  ifdef USE_LOCALE_CTYPE
+
+    Newxz(PL_ctype_name, 1, char);
+
 #  endif
 #  ifdef USE_LOCALE_NUMERIC
 
     PL_numeric_radix_sv = newSVpvn(C_decimal_point, strlen(C_decimal_point));
+    Newxz(PL_numeric_name, 1, char);
 
 #  endif
 #  ifdef LOCALE_ENVIRON_REQUIRED
